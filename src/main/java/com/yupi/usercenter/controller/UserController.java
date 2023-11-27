@@ -1,7 +1,7 @@
 package com.yupi.usercenter.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.fasterxml.jackson.databind.ser.Serializers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yupi.usercenter.common.BaseResponse;
 import com.yupi.usercenter.common.ErrorCode;
 import com.yupi.usercenter.common.ResultUtils;
@@ -75,7 +75,7 @@ public class UserController {
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
-        User user = userService.userLogin(userAccount, userPassword, request);
+        User user = this.userService.userLogin(userAccount, userPassword, request);
         return ResultUtils.success(user);
     }
 
@@ -114,8 +114,6 @@ public class UserController {
         return ResultUtils.success(safetyUser);
     }
 
-    // https://yupi.icu/
-
     @GetMapping("/search")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
         if (!isAdmin(request)) {
@@ -142,13 +140,33 @@ public class UserController {
         return ResultUtils.success(b);
     }
 
-    // [鱼皮的学习圈](https://yupi.icu) 从 0 到 1 求职指导，斩获 offer！1 对 1 简历优化服务、2000+ 求职面试经验分享、200+ 真实简历和建议参考、25w 字前后端精选面试题
+    @GetMapping("/findPartner")
+    public BaseResponse<List<User>> searchUserByTags(@RequestParam(required = false) List<String> tagList) {
+        if (tagList.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        return ResultUtils.success(this.userService.searchUserByTags(tagList));
+    }
+
+    @GetMapping("/recommendUsers")
+    public BaseResponse<Page<User>> recommendUsers(@RequestParam Integer pageNo,
+                                                   @RequestParam Integer pageSize,
+                                                   HttpServletRequest request) {
+        Page<User> result = this.userService.commendsUsers(pageNo,pageSize,request);
+        return ResultUtils.success(result);
+    }
+
+    @PostMapping("/update")
+    public BaseResponse<Integer> updateUser(@RequestBody User user,HttpServletRequest request) {
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        int b = this.userService.updateUser(user,request);
+        return ResultUtils.success(b);
+    }
 
     /**
      * 是否为管理员
-     *
-     * @param request
-     * @return
      */
     private boolean isAdmin(HttpServletRequest request) {
         // 仅管理员可查询

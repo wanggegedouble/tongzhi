@@ -1,7 +1,11 @@
 package com.yupi.usercenter.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.yupi.usercenter.common.ErrorCode;
 import com.yupi.usercenter.exception.BusinessException;
 import com.yupi.usercenter.model.domain.User;
@@ -9,15 +13,23 @@ import com.yupi.usercenter.service.UserService;
 import com.yupi.usercenter.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-import static com.yupi.usercenter.contant.UserConstant.USER_LOGIN_STATE;
+import static com.yupi.usercenter.contant.UserConstant.*;
 
 /**
  * 用户服务实现类
@@ -32,8 +44,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private UserMapper userMapper;
+    @Resource
+    private RedisTemplate<String,Object> redisTemplate;
 
-    // https://www.code-nav.cn/
 
     /**
      * 盐值，混淆密码
@@ -102,7 +115,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return user.getId();
     }
 
-    // [加入星球](https://www.code-nav.cn/) 从 0 到 1 项目实战，经验拉满！10+ 原创项目手把手教程、7 日项目提升训练营、60+ 编程经验分享直播、1000+ 项目经验笔记
 
     /**
      * 用户登录
@@ -121,7 +133,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (userAccount.length() < 4) {
             return null;
         }
-        if (userPassword.length() < 8) {
+        if (userPassword.length() < 6) {
             return null;
         }
         // 账户不能包含特殊字符
@@ -140,7 +152,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 用户不存在
         if (user == null) {
             log.info("user login failed, userAccount cannot match userPassword");
-            return null;
+            throw new BusinessException("密码或账号错误",400,null);
         }
         // 3. 用户脱敏
         User safetyUser = getSafetyUser(user);
@@ -172,6 +184,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setUserRole(originUser.getUserRole());
         safetyUser.setUserStatus(originUser.getUserStatus());
         safetyUser.setCreateTime(originUser.getCreateTime());
+        safetyUser.setTags(originUser.getTags());
         return safetyUser;
     }
 
@@ -187,6 +200,108 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return 1;
     }
 
+    @Override
+    public List<User> searchUserByTags(List<String> tagList) {
+        List<User> users = this.userMapper.selectList(Wrappers.<User>lambdaQuery().eq(User::getUserStatus, USER_ENABLE));
+        Gson gson = new Gson();
+        return users.stream().filter(user -> {
+            String tagJson = user.getTags();
+            Set<String> tempTageNameSet = gson.fromJson(tagJson,new TypeToken<Set<String>>(){}.getType());
+            tempTageNameSet = Optional.ofNullable(tempTageNameSet).orElse(new HashSet<>());
+            for (String tagName : tagList) {
+                if (!tempTageNameSet.contains(tagName)) {
+                    return false;
+                }
+            }
+            return true;
+        }).map(this::getSafetyUser).collect(Collectors.toList());
+    }
+    /**
+     @Override
+     public List<User> searchUserByTags(List<String> tagList) {
+     System.out.println("++++++++++++++++++++");
+     System.out.println(tagList);
+     LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+     for (String tag : tagList) {
+     log.info("tag:{}",tag);
+     wrapper.like(User::getTags,tag).or();
+     }
+     List<User> users = this.userMapper.selectList(wrapper);
+     return users.stream().map(this::getSafetyUser).collect(Collectors.toList());
+     }
+     **/
+
+    @Override
+    public int updateUser(User user, HttpServletRequest request) {
+        User loginUser = this.getLoginUser(request);
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
+        }
+        // 管理员可以修改所有人
+        // 其他用户只能修改自己
+        if (!isAdmin(loginUser) && user.getId().longValue() != loginUser.getId().longValue()) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        User oldUser = this.userMapper.selectById(user.getId());
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        return this.userMapper.updateById(user);
+    }
+
+    /**
+     *  获取当前登录用户
+     */
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        Object user = request.getSession().getAttribute(USER_LOGIN_STATE);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        return (User) user;
+    }
+
+    @Override
+    public boolean isAdmin(HttpServletRequest request) {
+        // 仅管理员可查询
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User user = (User) userObj;
+        return user != null && user.getUserRole() == ADMIN_ROLE;
+    }
+
+    @Override
+    public boolean isAdmin(User user) {
+        return user != null && user.getUserRole() == ADMIN_ROLE;
+    }
+
+    @Override
+    public Page<User> commendsUsers(Integer pageNo, Integer pageSize, HttpServletRequest request) {
+        Long userId = this.getLoginUser(request).getId();
+        Gson gson = new Gson();
+        String redisKey = String.format("yupao:user:commendsUsers:%s", userId);
+        ValueOperations<String, Object> opsForValue = redisTemplate.opsForValue();
+        String redisJson = (String) opsForValue.get(redisKey);
+        Page<User> comendsUsersPage = gson.fromJson(redisJson, new TypeToken<Page<User>>() {}.getType());
+        if (comendsUsersPage != null) {
+            log.info("from redis");
+            List<User> records = comendsUsersPage.getRecords();
+            log.info(records.toString());
+            return comendsUsersPage;
+        }
+        Page<User> userPage = this.userMapper.selectPage(new Page<>(pageNo, pageSize), null);
+        List<User> records = userPage.getRecords();
+        List<User> collect = records.stream().map(this::getSafetyUser).collect(Collectors.toList());
+        Page<User> safeUserPage = userPage.setRecords(collect);
+        try {
+            opsForValue.set(redisKey,gson.toJson(safeUserPage),120, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("redis set key error");
+        }
+        return safeUserPage;
+    }
+
 }
 
-// [加入我们](https://yupi.icu) 从 0 到 1 项目实战，经验拉满！10+ 原创项目手把手教程、7 日项目提升训练营、1000+ 项目经验笔记、60+ 编程经验分享直播
