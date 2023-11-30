@@ -19,5 +19,3 @@ public class TongZhiApplication {
     }
 
 }
-
-// https://github.com/liyupi

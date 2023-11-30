@@ -2,7 +2,6 @@ spring:
   # DataSource Config
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-#    url: jdbc:mysql://localhost/yupao?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     url: jdbc:mysql://47.108.180.135/TongZhi?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: root
     password: admin
