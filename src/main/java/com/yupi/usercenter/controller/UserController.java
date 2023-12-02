@@ -7,15 +7,14 @@ import com.yupi.usercenter.common.ErrorCode;
 import com.yupi.usercenter.common.ResultUtils;
 import com.yupi.usercenter.exception.BusinessException;
 import com.yupi.usercenter.model.domain.User;
-import com.yupi.usercenter.model.domain.request.UserLoginRequest;
-import com.yupi.usercenter.model.domain.request.UserRegisterRequest;
+import com.yupi.usercenter.model.request.UserLoginRequest;
+import com.yupi.usercenter.model.request.UserRegisterRequest;
 import com.yupi.usercenter.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 

@@ -2,6 +2,7 @@ package com.yupi.usercenter.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.yupi.usercenter.model.domain.Team;
+import com.yupi.usercenter.model.request.AddRTeamReq;
 
 /**
 * @author huawei
@@ -10,4 +11,5 @@ import com.yupi.usercenter.model.domain.Team;
 */
 public interface TeamService extends IService<Team> {
 
+    int addTeam(AddRTeamReq teamReq);
 }

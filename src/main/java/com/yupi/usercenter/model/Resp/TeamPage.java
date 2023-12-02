@@ -1,20 +1,21 @@
-package com.yupi.usercenter.model.domain;
+package com.yupi.usercenter.model.Resp;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 队伍
- * @TableName team
+ * @Author: wy
+ * @CreateTime: 2023-12-02  02:23
+ * @Description: TODO
+ * @Version: 1.0
  */
-@TableName(value ="team")
 @Data
-public class Team implements Serializable {
-
-    private static final long serialVersionUID = 598285145971988752L;
+public class TeamPage implements Serializable {
+    private static final long serialVersionUID = -4751698780170466626L;
     /**
      * id
      */
@@ -50,26 +51,4 @@ public class Team implements Serializable {
      * 0 - 公开，1 - 私有，2 - 加密
      */
     private Integer status;
-
-    /**
-     * 密码
-     */
-    private String password;
-
-    /**
-     * 创建时间
-     */
-    private Date createTime;
-
-    /**
-     * 
-     */
-    private Date updateTime;
-
-    /**
-     * 是否删除
-     */
-    @TableLogic
-    private Integer isDelete;
-
 }

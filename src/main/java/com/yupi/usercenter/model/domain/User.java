@@ -12,6 +12,7 @@ import java.util.Date;
 @TableName(value = "user")
 @Data
 public class User implements Serializable {
+    private static final long serialVersionUID = 4204250037259441192L;
     /**
      * id
      */
@@ -89,8 +90,5 @@ public class User implements Serializable {
      */
     private String planetCode;
 
-
-    @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
 }
 
