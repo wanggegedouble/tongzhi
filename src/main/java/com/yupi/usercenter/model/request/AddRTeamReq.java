@@ -1,9 +1,8 @@
 package com.yupi.usercenter.model.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.hibernate.validator.constraints.Length;
 
 import javax.validation.constraints.*;
 import java.io.Serializable;
@@ -22,31 +21,28 @@ public class AddRTeamReq implements Serializable {
     /**
      * 队伍名称
      */
-    @NotBlank(message = "队伍名称不能为null")
-    @NotNull(message = "不能为空字符串")
+    @NotNull(message = "空字符串不能为")
+    @Length(message = "队伍名称不能超过20个字",max = 20)
     private String name;
 
     /**
      * 描述
      */
-    @NotBlank(message = "队伍描述不能为空")
-    @NotNull(message = "不能为空字符串")
+    @NotNull(message = "队伍描述不能为空")
+    @Length(message = "描述长度不能超过500个字",max = 500)
     private String description;
 
     /**
      * 最大人数
      */
-    @Min(message = "最少人数不能低于1", value = 1L)
-    @Max(message = "最少人数不能高于50",value = 50)
     @NotNull
+    @Max(message = "最大人数",value = 20)
+    @Min(message = "最小人数",value = 1)
     private Integer maxNum;
-
     /**
      * 过期时间
      */
     @NotNull(message = "过期时间不能为空")
-//    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss" )
     private Date expireTime;
 
     /**
@@ -65,7 +61,6 @@ public class AddRTeamReq implements Serializable {
     /**
      * 密码
      */
-    @NotNull(message = "密码不能为空")
     private String password;
 
 }

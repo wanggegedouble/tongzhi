@@ -13,6 +13,8 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
+  jackson:
+    date-format: yyyy-mm-dd HH:mm:ss
   redis:
     host: 47.108.180.135
     password: 123456

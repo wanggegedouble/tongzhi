@@ -10,12 +10,20 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import javax.validation.UnexpectedTypeException;
+
 /**
  * 全局异常处理器
  */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(Exception.class)
+    public BaseResponse<?> exceptionHandler(Exception e) {
+        log.error("exception",e);
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR,e.getMessage(),null);
+    }
 
     @ExceptionHandler(BusinessException.class)
     public BaseResponse<?> businessExceptionHandler(BusinessException e) {
@@ -35,6 +43,12 @@ public class GlobalExceptionHandler {
         BindingResult result = e.getBindingResult();
         FieldError error = result.getFieldError();
         return ResultUtils.error(ErrorCode.PARAMS_ERROR,error.getDefaultMessage(),"");
+    }
+
+    @ExceptionHandler(UnexpectedTypeException.class)
+    public BaseResponse<?> unexpectedTypeExceptionHandler(UnexpectedTypeException e) {
+        log.error("unexpectedTypeExceptionHandler: ",e);
+        return ResultUtils.error(ErrorCode.PARAMS_ERROR,e.getMessage(),"");
     }
 
 
