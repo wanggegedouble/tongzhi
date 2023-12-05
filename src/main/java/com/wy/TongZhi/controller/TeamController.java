@@ -4,7 +4,6 @@ import java.util.Optional;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.databind.ser.Serializers;
 import com.wy.TongZhi.common.BaseResponse;
 import com.wy.TongZhi.common.ErrorCode;
 import com.wy.TongZhi.common.ResultUtils;
@@ -98,13 +97,12 @@ public class TeamController {
     }
 
     @PostMapping("/quitTeam/{teamId}")
-    public BaseResponse<String> quitTeam(@PathVariable Long teamId,HttpServletRequest request) {
+    public BaseResponse<Boolean> quitTeam(@PathVariable Long teamId,HttpServletRequest request) {
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = this.userService.getLoginUser(request);
-        boolean isSuccess = this.teamService.quitTeam(teamId,loginUser);
-        return ResultUtils.success("退出成功");
+        return ResultUtils.success(this.teamService.quitTeam(teamId,loginUser));
     }
 
     /**
