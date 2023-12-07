@@ -11,7 +11,8 @@ public enum ErrorCode {
     NOT_LOGIN(40100, "未登录", ""),
     NO_AUTH(40101, "无权限", ""),
     SYSTEM_ERROR(50000, "系统内部异常", ""),
-    BUSINESS_ERROR(6000,"业务处理异常","");
+    BUSINESS_ERROR(6000,"业务处理异常",""),
+    SYSTEM_PARSE_ERROR(500001,"json 解析失败","");
 
     private final int code;
 

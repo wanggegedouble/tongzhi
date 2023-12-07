@@ -1,4 +1,7 @@
 package com.wy.TongZhi.service.impl;
+
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wy.TongZhi.mapper.UserMapper;
 import com.wy.TongZhi.model.Resp.UserResp;
 import java.lang.reflect.InvocationTargetException;
@@ -43,6 +46,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     private UserTeamMapper userTeamMapper;
     @Resource
     private UserMapper userMapper;
+    @Resource
+    private ObjectMapper objectMapper;
+
 
 
     @Override

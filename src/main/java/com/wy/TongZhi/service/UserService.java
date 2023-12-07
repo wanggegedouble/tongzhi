@@ -1,6 +1,7 @@
 package com.wy.TongZhi.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wy.TongZhi.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -75,4 +76,7 @@ public interface UserService extends IService<User> {
     boolean isAdmin(User user);
 
     Page<User> commendsUsers(Integer pageNo, Integer pageSize, HttpServletRequest request);
+
+    List<User> matcherUsers(long userNum,User loginUser) throws JsonProcessingException;
+
 }

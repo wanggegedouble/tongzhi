@@ -1,9 +1,13 @@
 package com.wy.TongZhi.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.wy.TongZhi.common.ErrorCode;
@@ -11,8 +15,10 @@ import com.wy.TongZhi.exception.BusinessException;
 import com.wy.TongZhi.model.domain.User;
 import com.wy.TongZhi.service.UserService;
 import com.wy.TongZhi.mapper.UserMapper;
+import com.wy.TongZhi.utils.AlgorithmUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -20,10 +26,7 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -303,5 +306,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return safeUserPage;
     }
 
+    @Override
+    public List<User> matcherUsers(long numUser, User loginUser) throws JsonProcessingException {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(User::getId,User::getTags);
+        wrapper.isNotNull(User::getTags);
+        // 查询所有数据库所有用户的标签数据
+        List<User> users = this.baseMapper.selectList(wrapper);
+        String tags = loginUser.getTags();
+        log.info("logUserTags :{}",tags);
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<String> loginUserTagList = objectMapper.readValue(tags, new TypeReference<>() {});
+        List<Pair<User,Long>> list = new ArrayList<>();
+        // 循环与当前用户进行比较
+        for (User user : users) {
+            String userTagJson = user.getTags();
+            if (StringUtils.isBlank(userTagJson) || Objects.equals(user.getId(), loginUser.getId())) {
+                continue;
+            }
+            List<String> userTagList = objectMapper.readValue(userTagJson, new TypeReference<>() {});
+            // 按照算法，推荐排序
+            long score = AlgorithmUtils.minDistance(loginUserTagList,userTagList);
+            log.info("user{}",user);
+            list.add(new Pair<>(user,score));
+        }
+        log.info("list.size: {}",list.size());
+        // 排序后idList
+        List<Long> idList = list.stream()
+                .sorted((a, b) -> (int) (a.getValue() - b.getValue()))
+                .limit(numUser)
+                .map(pair->pair.getKey().getId())
+                .collect(Collectors.toList());
+        log.info("idList:{}",idList);
+        wrapper.clear();
+        wrapper.in(User::getId,idList);
+        Map<Long, List<User>> userIdListMap = this.baseMapper.selectList(wrapper)
+                .stream()
+                .map(this::getSafetyUser)
+                .collect(Collectors.groupingBy(User::getId));
+        List<User> finalUserList = new ArrayList<>();
+        for (Long id : idList) {
+            finalUserList.add(userIdListMap.get(id).get(0));
+        }
+        return finalUserList;
+    }
 }
 

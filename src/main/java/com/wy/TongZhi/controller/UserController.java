@@ -2,6 +2,7 @@ package com.wy.TongZhi.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wy.TongZhi.common.BaseResponse;
 import com.wy.TongZhi.common.ErrorCode;
 import com.wy.TongZhi.common.ResultUtils;
@@ -160,6 +161,11 @@ public class UserController {
         return ResultUtils.success(b);
     }
 
+    @GetMapping("/matcherUsers")
+    public BaseResponse<List<User>> matcherUsers(@RequestParam Long  userNum,HttpServletRequest request) throws JsonProcessingException {
+        User loginUser = this.userService.getLoginUser(request);
+        return ResultUtils.success(this.userService.matcherUsers(userNum,loginUser));
+    }
     /**
      * 是否为管理员
      */

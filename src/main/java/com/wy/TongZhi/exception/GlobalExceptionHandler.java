@@ -1,5 +1,6 @@
 package com.wy.TongZhi.exception;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wy.TongZhi.common.BaseResponse;
 import com.wy.TongZhi.common.ErrorCode;
 import com.wy.TongZhi.common.ResultUtils;
@@ -44,6 +45,12 @@ public class GlobalExceptionHandler {
     public BaseResponse<?> unexpectedTypeExceptionHandler(UnexpectedTypeException e) {
         log.error("unexpectedTypeExceptionHandler: ",e);
         return ResultUtils.error(ErrorCode.PARAMS_ERROR,e.getMessage(),"");
+    }
+
+    @ExceptionHandler(JsonProcessingException.class)
+    public BaseResponse<?> jsonProcessingException(JsonProcessingException e) {
+        log.error("JsonProcessingException",e);
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR,e.getMessage(),"");
     }
 
 
