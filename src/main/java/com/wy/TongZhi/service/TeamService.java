@@ -25,7 +25,7 @@ public interface TeamService extends IService<Team> {
 
     boolean updateTeam(UpdateTeamReq updateTeamReq);
 
-    void joinTeam(TeamJoinReq teamJoinReq, User loginUser);
+    int joinTeam(TeamJoinReq teamJoinReq, User loginUser);
 
     boolean quitTeam(Long teamId, User logUser);
 

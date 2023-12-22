@@ -40,29 +40,6 @@ public class PreCacheJob {
 
     private final List<Long> ids = List.of(1L);
 
-//    @Scheduled(cron = "0 0 0 ? * ? ")
-//    public void doPreCommendsUsers() {
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        for (Long userId : ids) {
-//            LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-//            wrapper.eq(User::getUserStatus, UserConstant.USER_ENABLE);
-//            Page<User> userPage = this.userMapper.selectPage(new Page<>(1, 20), wrapper);
-//            List<User> records = userPage.getRecords();
-//            if (records.isEmpty()) {
-//                new Page<>();
-//            }
-//            List<User> safeUserPage = records.stream().map(user -> this.userService.getSafetyUser(user)).collect(Collectors.toList());
-//            userPage.setRecords(safeUserPage);
-//            try {
-//                String redisValue = objectMapper.writeValueAsString(userPage);
-//                String redisKey = String.format("yupao:user:recommendsUsers:%s", userId);
-//                redisTemplate.opsForValue().set(redisKey,redisValue,30, TimeUnit.MINUTES);
-//            } catch (JsonProcessingException e) {
-//                log.error(e.getMessage());
-//            }
-//        }
-//    }
-
     @Scheduled(cron = "0 0 0 ? * ? ")
     public void doPreCommendsUserByRedisLock() {
         RLock lock = redissonClient.getLock("yupao:preCacheJob:doCache:lock");
@@ -97,5 +74,28 @@ public class PreCacheJob {
             }
         }
     }
+
+    //    @Scheduled(cron = "0 0 0 ? * ? ")
+//    public void doPreCommendsUsers() {
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        for (Long userId : ids) {
+//            LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+//            wrapper.eq(User::getUserStatus, UserConstant.USER_ENABLE);
+//            Page<User> userPage = this.userMapper.selectPage(new Page<>(1, 20), wrapper);
+//            List<User> records = userPage.getRecords();
+//            if (records.isEmpty()) {
+//                new Page<>();
+//            }
+//            List<User> safeUserPage = records.stream().map(user -> this.userService.getSafetyUser(user)).collect(Collectors.toList());
+//            userPage.setRecords(safeUserPage);
+//            try {
+//                String redisValue = objectMapper.writeValueAsString(userPage);
+//                String redisKey = String.format("yupao:user:recommendsUsers:%s", userId);
+//                redisTemplate.opsForValue().set(redisKey,redisValue,30, TimeUnit.MINUTES);
+//            } catch (JsonProcessingException e) {
+//                log.error(e.getMessage());
+//            }
+//        }
+//    }
 
 }

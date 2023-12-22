@@ -17,7 +17,6 @@ public interface UserConstant {
      */
     int DEFAULT_ROLE = 0;
 
-
     /**
      * 管理员权限
      */

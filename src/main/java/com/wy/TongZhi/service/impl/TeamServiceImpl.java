@@ -1,7 +1,6 @@
 package com.wy.TongZhi.service.impl;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wy.TongZhi.mapper.UserMapper;
 import com.wy.TongZhi.model.Resp.UserResp;
 import java.lang.reflect.InvocationTargetException;
@@ -28,10 +27,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -47,9 +49,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     @Resource
     private UserMapper userMapper;
     @Resource
-    private ObjectMapper objectMapper;
-
-
+    private RedissonClient redissonClient;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -198,7 +198,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     }
 
     @Override
-    public void joinTeam(TeamJoinReq teamJoinReq, User loginUser) {
+    public int joinTeam(TeamJoinReq teamJoinReq, User loginUser) {
         if (teamJoinReq == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -217,30 +217,46 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR,"加密队伍必须设置密码");
             }
         }
-        // 用户只能加入5个队伍
-        LambdaQueryWrapper<UserTeam> userTeamWrapper = new LambdaQueryWrapper<>();
-        userTeamWrapper.eq(UserTeam::getUserId,userId);
-        userTeamWrapper.eq(UserTeam::getTeamId,teamJoinReq);
-        long count = this.userTeamMapper.selectCount(userTeamWrapper);
-        if (count > 0) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"用户以已加入该队伍");
-        }
-        // 判断队伍是否已满员
-        Integer maxNum = teamFromDb.getMaxNum();
-        userTeamWrapper.clear();
-        userTeamWrapper.eq(UserTeam::getTeamId,teamIdReq);
-        count = this.userTeamMapper.selectCount(userTeamWrapper);
-        if (maxNum < count) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"队伍已满");
-        }
-        // 加入队伍
-        UserTeam userTeam = new UserTeam();
-        userTeam.setTeamId(teamIdReq);
-        userTeam.setUserId(userId);
-        userTeam.setJoinTime(new Date());
-        int insert = this.userTeamMapper.insert(userTeam);
-        if (insert != 1) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        RLock lock = redissonClient.getLock("tongZhi:join_team");
+        try {
+            while(true) {
+                if (lock.tryLock(0, -1, TimeUnit.MILLISECONDS)) {
+                    // 用户只能加入5个队伍
+                    LambdaQueryWrapper<UserTeam> userTeamWrapper = new LambdaQueryWrapper<>();
+                    userTeamWrapper.eq(UserTeam::getUserId,userId);
+                    userTeamWrapper.eq(UserTeam::getTeamId,teamJoinReq);
+                    long count = this.userTeamMapper.selectCount(userTeamWrapper);
+                    if (count > 0) {
+                        throw new BusinessException(ErrorCode.SYSTEM_ERROR,"用户已加入该队伍");
+                    }
+                    // 判断队伍是否已满员
+                    Integer maxNum = teamFromDb.getMaxNum();
+                    userTeamWrapper.clear();
+                    userTeamWrapper.eq(UserTeam::getTeamId,teamIdReq);
+                    count = this.userTeamMapper.selectCount(userTeamWrapper);
+                    if (maxNum < count) {
+                        throw new BusinessException(ErrorCode.SYSTEM_ERROR,"队伍已满");
+                    }
+                    // 加入队伍
+                    UserTeam userTeam = new UserTeam();
+                    userTeam.setTeamId(teamIdReq);
+                    userTeam.setUserId(userId);
+                    userTeam.setJoinTime(new Date());
+                    int insert = this.userTeamMapper.insert(userTeam);
+                    if (insert != 1) {
+                        throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+                    }
+                    return insert;
+                }
+            }
+        }catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            // 只能释放自己的锁
+            if (lock.isHeldByCurrentThread()) {
+                log.info("unLock: {} ",Thread.currentThread().getId());
+                lock.unlock();
+            }
         }
     }
 

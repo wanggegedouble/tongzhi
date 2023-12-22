@@ -27,10 +27,11 @@ class UserCenterApplicationTests {
     @Resource
     private RedisTemplate<String,Object> redisTemplate;
 
-    private final ExecutorService executorService = new ThreadPoolExecutor(20, 1000, 10000, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10000));
+    private final ExecutorService executorService = new ThreadPoolExecutor(
+                    16, 1000, 10000,
+                    TimeUnit.MINUTES,
+                    new ArrayBlockingQueue<>(10000));
 
-
-    // https://yupi.icu/
 
     @Test
     void testDigest() throws NoSuchAlgorithmException {
@@ -57,23 +58,11 @@ class UserCenterApplicationTests {
             List<User> userList = new ArrayList<>();
             do {
                 j++;
-                User user = new User();
-                user.setUsername("假鱼皮"+j);
-                user.setUserAccount("fakeyupi");
-                user.setAvatarUrl("https://636f-codenav-8grj8px727565176-1256524210.tcb.qcloud.la/img/logo.png");
-                user.setGender(0);
-                user.setUserPassword("12345678");
-                user.setPhone("123");
-                user.setEmail("123@qq.com");
-                user.setTags("[]");
-                user.setUserStatus(0);
-                user.setUserRole(0);
-                user.setPlanetCode("11111111");
+                User user = getUser(j);
                 userList.add(user);
             } while ((j % batchSize) != 0);
             // 异步执行
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                System.out.println("threadName: " + Thread.currentThread().getName());
                 userService.saveBatch(userList, batchSize);
             }, executorService);
             futureList.add(future);
@@ -82,6 +71,22 @@ class UserCenterApplicationTests {
         // 20 秒 10 万条
         stopWatch.stop();
         System.out.println(stopWatch.getTotalTimeMillis());
+    }
+
+    private User getUser(int j) {
+        User user = new User();
+        user.setUsername("假鱼皮"+ j);
+        user.setUserAccount("fakeyupi");
+        user.setAvatarUrl("https://636f-codenav-8grj8px727565176-1256524210.tcb.qcloud.la/img/logo.png");
+        user.setGender(0);
+        user.setUserPassword("12345678");
+        user.setPhone("123");
+        user.setEmail("123@qq.com");
+        user.setTags("[]");
+        user.setUserStatus(0);
+        user.setUserRole(0);
+        user.setPlanetCode("11111111");
+        return user;
     }
 
     @Test

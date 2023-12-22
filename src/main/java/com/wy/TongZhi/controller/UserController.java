@@ -11,6 +11,8 @@ import com.wy.TongZhi.model.domain.User;
 import com.wy.TongZhi.model.request.UserLoginRequest;
 import com.wy.TongZhi.model.request.UserRegisterRequest;
 import com.wy.TongZhi.service.UserService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,12 +26,10 @@ import static com.wy.TongZhi.contant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 用户接口
- *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
 @RestController
 @RequestMapping("/user")
+@Api(tags = "用户接口")
 public class UserController {
 
     @Resource
@@ -37,11 +37,9 @@ public class UserController {
 
     /**
      * 用户注册
-     *
-     * @param userRegisterRequest
-     * @return
      */
     @PostMapping("/register")
+    @ApiOperation("注册")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         // 校验
         if (userRegisterRequest == null) {
@@ -62,7 +60,8 @@ public class UserController {
      * 用户登录
      */
     @PostMapping("/login")
-    public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    @ApiOperation("登录")
+    public BaseResponse<?> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         if (userLoginRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
@@ -77,11 +76,9 @@ public class UserController {
 
     /**
      * 用户注销
-     *
-     * @param request
-     * @return
      */
     @PostMapping("/logout")
+    @ApiOperation("退出")
     public BaseResponse<Integer> userLogout(HttpServletRequest request) {
         if (request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -92,11 +89,9 @@ public class UserController {
 
     /**
      * 获取当前用户
-     *
-     * @param request
-     * @return
      */
     @GetMapping("/current")
+    @ApiOperation("获取当前用户")
     public BaseResponse<User> getCurrentUser(HttpServletRequest request) {
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userObj;
@@ -111,8 +106,9 @@ public class UserController {
     }
 
     @GetMapping("/search")
+    @ApiOperation("根据用户名称查找")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH, "缺少管理员权限");
         }
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -125,8 +121,9 @@ public class UserController {
     }
 
     @PostMapping("/delete")
+    @ApiOperation("删除用户")
     public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         if (id <= 0) {
@@ -137,6 +134,7 @@ public class UserController {
     }
 
     @GetMapping("/findPartner")
+    @ApiOperation("根据标签找伙伴")
     public BaseResponse<List<User>> searchUserByTags(@RequestParam(required = false) List<String> tagList) {
         if (tagList.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -145,6 +143,7 @@ public class UserController {
     }
 
     @GetMapping("/recommendUsers")
+    @ApiOperation("首页推荐")
     public BaseResponse<Page<User>> recommendUsers(@RequestParam Integer pageNo,
                                                    @RequestParam Integer pageSize,
                                                    HttpServletRequest request) {
@@ -152,7 +151,8 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
-    @PostMapping("/update")
+    @PutMapping("/update")
+    @ApiOperation("更新用户")
     public BaseResponse<Integer> updateUser(@RequestBody User user,HttpServletRequest request) {
         if (user == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -162,6 +162,7 @@ public class UserController {
     }
 
     @GetMapping("/matcherUsers")
+    @ApiOperation("当前用户最佳匹配")
     public BaseResponse<List<User>> matcherUsers(@RequestParam Long  userNum,HttpServletRequest request) throws JsonProcessingException {
         User loginUser = this.userService.getLoginUser(request);
         return ResultUtils.success(this.userService.matcherUsers(userNum,loginUser));
@@ -173,7 +174,7 @@ public class UserController {
         // 仅管理员可查询
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User user = (User) userObj;
-        return user != null && user.getUserRole() == ADMIN_ROLE;
+        return user == null || user.getUserRole() != ADMIN_ROLE;
     }
 
 }

@@ -36,7 +36,7 @@ import javax.validation.constraints.NotNull;
 @RequestMapping("/team")
 @Slf4j
 @Validated
-@Api("team")
+@Api(tags = "队伍接口")
 public class TeamController {
 
     @Resource
@@ -45,6 +45,7 @@ public class TeamController {
     private UserService userService;
 
     @PostMapping("/add")
+    @ApiOperation("创建队伍")
     public BaseResponse<?> addTeam(@RequestBody @Valid AddRTeamReq teamReq) {
         log.info("team : {}",teamReq);
         int i = this.teamService.addTeam(teamReq);
@@ -52,6 +53,7 @@ public class TeamController {
     }
 
     @DeleteMapping("/delete/{teamId}")
+    @ApiOperation("解散队伍")
     public BaseResponse<Boolean> deleteTeam(@PathVariable @NotNull(message = "不能为空") Long teamId,HttpServletRequest request) {
         if (teamId == null || teamId < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -62,6 +64,7 @@ public class TeamController {
     }
 
     @PutMapping("/update")
+    @ApiOperation("修改队伍信息")
     public BaseResponse<Boolean> updateTeam(@RequestBody @Valid UpdateTeamReq updateTeamReq) {
         boolean isSuccess = this.teamService.updateTeam(updateTeamReq);
         if (!isSuccess) {
@@ -81,6 +84,7 @@ public class TeamController {
     }
 
     @GetMapping("/getTeamByName/{teamName}")
+    @ApiOperation("根据队伍名称查询")
     public BaseResponse<Team> getTeamByName(@PathVariable @NotBlank(message = "teamName 不能为空") String teamName) {
         Team team = this.teamService.getOne(Wrappers.<Team>lambdaQuery().eq(Team::getName, teamName));
         if (Optional.ofNullable(team).isEmpty()) {
@@ -90,13 +94,15 @@ public class TeamController {
     }
 
     @PostMapping("/joinTeam")
+    @ApiOperation("加入队伍")
     public BaseResponse<String> joinTeam(@RequestBody @NotNull TeamJoinReq teamJoinReq, HttpServletRequest request) {
         User loginUser = this.userService.getLoginUser(request);
-        this.teamService.joinTeam(teamJoinReq,loginUser);
+        int i = this.teamService.joinTeam(teamJoinReq, loginUser);
         return ResultUtils.success("加入成功");
     }
 
     @PostMapping("/quitTeam/{teamId}")
+    @ApiOperation("退出队伍")
     public BaseResponse<Boolean> quitTeam(@PathVariable Long teamId,HttpServletRequest request) {
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -108,6 +114,7 @@ public class TeamController {
     /**
      *  获取我创建的队伍
      */
+    @ApiOperation("获取我创建的队伍")
     @GetMapping("/list/my/create")
     public BaseResponse<Page<TeamUserResp>> listMyCreate(QueryTeamReq queryTeamReq,HttpServletRequest request) {
         User loginUser = this.userService.getLoginUser(request);
@@ -119,6 +126,7 @@ public class TeamController {
      *  获取我加入的队伍
      */
     @GetMapping("/list/my/join")
+    @ApiOperation("获取我加入的队伍")
     public BaseResponse<Page<TeamUserResp>> listMyJoin(QueryTeamReq queryTeamReq,HttpServletRequest request) {
         User loginUser = this.userService.getLoginUser(request);
         List<Long> idList = this.teamService.myJoinTeam(loginUser.getId());
