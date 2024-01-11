@@ -1,6 +1,6 @@
 ## 项目介绍
 
-​		速配(SUPER)，一个前后端分离的用户匹配系统，前端使用**Vite + Vue3 + Vant4**，后端使用**SpringBoot** + **Mybatis-plus**，使用**WebSocket**实现实时通信，并结合**阿里云SDK + 七牛云SDK**完成短信发送和图片上传。本项目使用Apache License Version 2.0开源协议。
+​		速配(SUPER)，一个前后端分离的用户匹配系统，后端使用**SpringBoot** + **Mybatis-plus**.
 
 #### 前端地址:
 
