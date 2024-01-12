@@ -74,8 +74,7 @@ public class PreCacheJob {
             }
         }
     }
-
-    //    @Scheduled(cron = "0 0 0 ? * ? ")
+//    @Scheduled(cron = "0 0 0 ? * ? ")
 //    public void doPreCommendsUsers() {
 //        ObjectMapper objectMapper = new ObjectMapper();
 //        for (Long userId : ids) {

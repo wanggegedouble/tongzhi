@@ -28,9 +28,9 @@ class UserCenterApplicationTests {
     private RedisTemplate<String,Object> redisTemplate;
 
     private final ExecutorService executorService = new ThreadPoolExecutor(
-                    16, 1000, 10000,
-                    TimeUnit.MINUTES,
-                    new ArrayBlockingQueue<>(10000));
+                    9, 10, 60,
+                    TimeUnit.SECONDS,
+                    new ArrayBlockingQueue<>(10000),Executors.defaultThreadFactory());
 
 
     @Test
